@@ -1,6 +1,7 @@
 package main;
 
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 
 /**
@@ -34,7 +35,7 @@ public class SudokuSolver
     
     public static class Puzzle
     {
-        private final int rows = 9, cols = 9;
+        private static final int rows = 9, cols = 9;
         
         /** The array that stores the state of the puzzle */
         private int[][] data;
@@ -140,7 +141,11 @@ public class SudokuSolver
          */
         private boolean solveBySource()
         {
-            return false;
+            boolean changed = false;
+            
+            
+            
+            return changed;
         }
         
         /**
@@ -255,6 +260,74 @@ public class SudokuSolver
             {
                 throw new IllegalArgumentException("Entries must be -1, " +
                         "or between 1 and " + rows + ": " + n);
+            }
+        }
+        
+        private static class PositionSet implements Iterable<PositionSet>
+        {
+            private static final int ROW = 0, COL = 1, BOX = 2;
+            
+            private int type;
+            private int row, col;
+            
+            private PositionSet(int type, int row, int col)
+            {
+                this.type = type;
+                this.row = row;
+                this.col = col;
+            }
+            
+            /***** Factory Getters *****/
+            public static PositionSet rowSet(int row)
+            {
+                return new PositionSet(ROW, row, 1);
+            }
+            
+            public static PositionSet colSet(int col)
+            {
+                return new PositionSet(COL, 1, col);
+            }
+            
+            public static PositionSet boxSet(int row, int col, int boxSize)
+            {
+                int rowStart = ((row - 1) / boxSize) * boxSize + 1;
+                int colStart = ((col - 1) / boxSize) * boxSize + 1;
+                return new PositionSet(BOX, rowStart, colStart);
+            }
+            
+            @Override
+            public Iterator<PositionSet> iterator()
+            {
+                return new Iterator<PositionSet>() {
+
+                    @Override
+                    public boolean hasNext()
+                    {
+                        switch(type)
+                        {
+                            case ROW:
+                                return row < Puzzle.rows;
+                            case COL:
+                                return col < Puzzle.cols;
+                            case BOX:
+                                throw new UnsupportedOperationException("Not supported yet.");
+                        }
+                        
+                        return false;
+                    }
+
+                    @Override
+                    public PositionSet next()
+                    {
+                        throw new UnsupportedOperationException("Not supported yet.");
+                    }
+
+                    @Override
+                    public void remove()
+                    {
+                        // does nothing
+                    }
+                };
             }
         }
     }
