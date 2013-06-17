@@ -1,5 +1,8 @@
 package main;
 
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  *
  * @author Tobin
@@ -25,12 +28,14 @@ public class SudokuSolver
      */
     public static void main(String[] args)
     {
-        System.out.println("hello world!");
+        System.out.println("Hello World!");
         Puzzle p = new Puzzle(EXAMPLE);
     }
     
     public static class Puzzle
     {
+        private final int rows = 9, cols = 9;
+        
         /** The array that stores the state of the puzzle */
         private int[][] data;
         
@@ -98,7 +103,35 @@ public class SudokuSolver
          */
         private boolean solveBySink()
         {
-            return false;
+            boolean changed = false;
+            
+            // loop through each box and rule out entries
+            for(int row = 1; row < rows; row++)
+            {
+                for(int col = 1; col < cols; col++)
+                {
+                    Set<Integer> possible = new HashSet<>((int)(rows / .75));
+                    for(int n = 1; n < rows; n++)
+                    {
+                        if(isLegal(row, col, n))
+                        {
+                            possible.add(n);
+                        }
+                    }
+                    
+                    if(possible.isEmpty())
+                    {
+                        throw new IllegalStateException(
+                                "Puzzle is now unsolvable!");
+                    }
+                    else if(possible.size() == 1)
+                    {
+                        set(row, col, possible.iterator().next());
+                        changed = true;
+                    }
+                }
+            }
+            return changed;
         }
         
         /**
@@ -111,18 +144,85 @@ public class SudokuSolver
         }
         
         /**
-         * Tests if the two positions are in the same box.  
-         * @param rowA
-         * @param colA
-         * @param rowB
-         * @param colB
-         * @return 
+         * Tests if the given change to the puzzle is legal.
+         * @param row The row to change
+         * @param col The col to change
+         * @param n The number to change it to
+         * @return If the change is legal
          */
-        public static boolean isInBox(int rowA, int colA, int rowB, int colB)
+        private boolean isLegal(int row, int col, int n)
         {
-            int boxSize = 3;
-            return  (rowA - 1 % boxSize == rowB - 1 % boxSize) &&
-                    (colA - 1 % boxSize == colB - 1 % boxSize);
+            // if the position is filled return false
+            if(get(row, col) != -1)
+            {
+                return false;
+            }
+            
+            return  !isInRow(row, n) &&
+                    !isInCol(col, n) &&
+                    !isInBox(row, col, n);
+        }
+        
+        /**
+         * Tests if the given number is in the given row.
+         * @param row the row to check
+         * @param n the number to check
+         * @return If the given number is in the row
+         */
+        private boolean isInRow(int row, int n)
+        {
+            for(int i = 1; i < cols; i++)
+            {
+                if(get(row, i) == n)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        /**
+         * Tests if the given number is in the given column.
+         * @param col the column to check
+         * @param n the number to check
+         * @return If the given number is in the column
+         */
+        private boolean isInCol(int col, int n)
+        {
+            for(int i = 1; i < rows; i++)
+            {
+                if(get(i, col) == n)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        /**
+         * Tests if the given number is in the box containing the given
+         * location.
+         * @param row The row of the box to check
+         * @param col The column of the box to check
+         * @param n The number to check
+         * @return If the number is contained in the given box
+         */
+        private boolean isInBox(int row, int col, int n)
+        {
+            int boxSize = (int)Math.sqrt(rows);
+            int rowStart = ((row - 1) / boxSize) * boxSize + 1;
+            int colStart = ((col - 1) / boxSize) * boxSize + 1;
+            for(int i = rowStart; i < rowStart + boxSize; i++)
+            {
+                for(int j = colStart; j < colStart + boxSize; j++)
+                {
+                    if(get(i, j) == n)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
         
         /**
@@ -131,13 +231,13 @@ public class SudokuSolver
          * @param row The row number
          * @param col The column number
          */
-        private static void checkBounds(int row, int col)
+        private void checkBounds(int row, int col)
         {
-            if(row < 0 || row >= 9)
+            if(row < 0 || row >= rows)
             {
                 throw new IllegalArgumentException("Illegal row number: "+ row);
             }
-            if(col < 0 || col >= 9)
+            if(col < 0 || col >= cols)
             {
                 throw new IllegalArgumentException(
                         "Illegal column number:" + col);
@@ -149,12 +249,12 @@ public class SudokuSolver
          * unknown entry.  
          * @param n 
          */
-        private static void checkRange(int n)
+        private void checkRange(int n)
         {
-            if(n != -1 && n <= 0 && n > 9)
+            if(n != -1 && n <= 0 && n > rows)
             {
-                throw new IllegalArgumentException(
-                        "Entries must be -1, or between 1 and 9: " + n);
+                throw new IllegalArgumentException("Entries must be -1, " +
+                        "or between 1 and " + rows + ": " + n);
             }
         }
     }
