@@ -1,7 +1,9 @@
 package main;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -31,11 +33,12 @@ public class SudokuSolver
     {
         System.out.println("Hello World!");
         Puzzle p = new Puzzle(EXAMPLE);
+        p.solve();
     }
     
     public static class Puzzle
     {
-        private static final int rows = 9, cols = 9;
+        private static final int rows = 9, cols = 9, boxSize = 3;
         
         /** The array that stores the state of the puzzle */
         private int[][] data;
@@ -54,7 +57,7 @@ public class SudokuSolver
                 for(int j = 0; j < data[i].length; j++)
                 {
                     // check location
-                    checkBounds(j, i);
+                    checkBounds(j + 1, i + 1);
                     // check the contents of the array
                     checkRange(data[i][j]);
                 }
@@ -67,13 +70,26 @@ public class SudokuSolver
          * Gets the contents of a cell in the puzzle.
          * @param row The row to get
          * @param col The column to get
+         * @throws IllegalArgumentException if the position is invalid
          * @return The value in that cell.  If the cell is not filled returns a
          * -1.
          */
         public int get(int row, int col)
         {
             checkBounds(row, col);
-            return data[col][row];
+            return data[col - 1][row - 1];
+        }
+        
+        /**
+         * Gets the contents of a cell in the puzzle.
+         * @param p The position to get the value of
+         * @throws IllegalArgumentException if the position is invalid
+         * @return The value in that cell.  If the cell is not filled returns a
+         * -1.
+         */
+        public int get(Position p)
+        {
+            return get(p.row, p.col);
         }
         
         /**
@@ -84,18 +100,50 @@ public class SudokuSolver
          * @throws IllegalArgumentException if the position is not valid, or if
          * the value is not valid
          */
-        public void set(int row, int col, int n)
+        private void set(int row, int col, int n)
         {
             checkBounds(row, col);
             checkRange(n);
-            data[col][row] = n;
+            data[col - 1][row - 1] = n;
         }
         
+        /**
+         * Sets the entry at the given position to the given value.
+         * @param p The position to set the value of
+         * @param n The value to set the the entry to
+         * @throws IllegalArgumentException if the position is not valid, or if
+         * the value is not valid
+         */
+        private void set(Position p, int n)
+        {
+            set(p.row, p.col, n);
+        }
         
+        /**
+         * Solves the puzzle.
+         * @return if the puzzle is solved successfully
+         */
         public boolean solve()
         {
+            while(solveBySink() || solveBySource())
+            {
+                // wheee!
+            }
             
-            return false;
+            // we can solve no more, check the state
+            for(int row = 1; row < rows; row++)
+            {
+                for(int col = 1; col < cols; col++)
+                {
+                    int n = get(row, col);
+                    if(n == -1 || !isLegal(row, col, n))
+                    {
+                        return false;
+                    }
+                }
+            }
+            // all boxes have valid entries
+            return true;
         }
         
         /**
@@ -111,6 +159,12 @@ public class SudokuSolver
             {
                 for(int col = 1; col < cols; col++)
                 {
+                    if(get(row, col) != -1)
+                    {
+                        // there is already something in this box
+                        continue;
+                    }
+                    
                     Set<Integer> possible = new HashSet<>((int)(rows / .75));
                     for(int n = 1; n < rows; n++)
                     {
@@ -143,9 +197,65 @@ public class SudokuSolver
         {
             boolean changed = false;
             
-            
+            // loop through each position
+            for(int col = 1; col < cols; col++)
+            {
+                position: for(int row = 1; row < rows; row++)
+                {
+                    if(get(row, col) != -1)
+                    {
+                        // we already know what is in this position
+                        continue;
+                    }
+                    // check if each number can go anywhere else
+                    for(int n = 1; n < rows; n++)
+                    {
+                        if(!isLegal(row, col, n))
+                        {
+                            // we can't put this number here
+                            continue;
+                        }
+                        
+                        for(PositionSet set :
+                                PositionSet.getAllSets(row, col, boxSize))
+                        {
+                            Set<Position> possible = getPossible(n, set);
+                            if(possible.size() == 1)
+                            {
+                                // there is only one possible position for n
+                                set(possible.iterator().next(), n);
+                                changed = true;
+                                // go to the next posiiton
+                                continue position;
+                            }
+                        }
+                    }
+                }
+            }
             
             return changed;
+        }
+        
+        /**
+         * Gets all possible positions of the given number in the set.
+         * @param n The number to check
+         * @param set The set of positions to check
+         * @return The set of positions the given number can fill in the given
+         * set
+         */
+        private Set<Position> getPossible(int n, PositionSet set)
+        {
+            Set<Position> possible = new HashSet<>((int)(rows / .75));
+            
+            for(Position p : set)
+            {
+                if(get(p) == -1 && isLegal(p.row, p.col, n))
+                {
+                    possible.add(p);
+                }
+            }
+            
+            return possible;
         }
         
         /**
@@ -163,68 +273,30 @@ public class SudokuSolver
                 return false;
             }
             
-            return  !isInRow(row, n) &&
-                    !isInCol(col, n) &&
-                    !isInBox(row, col, n);
-        }
-        
-        /**
-         * Tests if the given number is in the given row.
-         * @param row the row to check
-         * @param n the number to check
-         * @return If the given number is in the row
-         */
-        private boolean isInRow(int row, int n)
-        {
-            for(int i = 1; i < cols; i++)
+            for(PositionSet set : PositionSet.getAllSets(row, col, boxSize))
             {
-                if(get(row, i) == n)
+                if(contains(set, n))
                 {
-                    return true;
+                    return false;
                 }
             }
-            return false;
+            
+            return true;
         }
         
         /**
-         * Tests if the given number is in the given column.
-         * @param col the column to check
-         * @param n the number to check
-         * @return If the given number is in the column
+         * Tests if the given number appears in the given set of positions.
+         * @param set The set of positions to check
+         * @param n The number to look for
+         * @return If the number appears in the set of positions
          */
-        private boolean isInCol(int col, int n)
+        private boolean contains(PositionSet set, int n)
         {
-            for(int i = 1; i < rows; i++)
+            for(Position p : set)
             {
-                if(get(i, col) == n)
+                if(get(p) == n)
                 {
                     return true;
-                }
-            }
-            return false;
-        }
-        
-        /**
-         * Tests if the given number is in the box containing the given
-         * location.
-         * @param row The row of the box to check
-         * @param col The column of the box to check
-         * @param n The number to check
-         * @return If the number is contained in the given box
-         */
-        private boolean isInBox(int row, int col, int n)
-        {
-            int boxSize = (int)Math.sqrt(rows);
-            int rowStart = ((row - 1) / boxSize) * boxSize + 1;
-            int colStart = ((col - 1) / boxSize) * boxSize + 1;
-            for(int i = rowStart; i < rowStart + boxSize; i++)
-            {
-                for(int j = colStart; j < colStart + boxSize; j++)
-                {
-                    if(get(i, j) == n)
-                    {
-                        return true;
-                    }
                 }
             }
             return false;
@@ -238,11 +310,11 @@ public class SudokuSolver
          */
         private void checkBounds(int row, int col)
         {
-            if(row < 0 || row >= rows)
+            if(row <= 0 || row > rows)
             {
                 throw new IllegalArgumentException("Illegal row number: "+ row);
             }
-            if(col < 0 || col >= cols)
+            if(col <= 0 || col > cols)
             {
                 throw new IllegalArgumentException(
                         "Illegal column number:" + col);
@@ -256,49 +328,107 @@ public class SudokuSolver
          */
         private void checkRange(int n)
         {
-            if(n != -1 && n <= 0 && n > rows)
+            if(n != -1 && (n <= 0 || n > rows))
             {
                 throw new IllegalArgumentException("Entries must be -1, " +
                         "or between 1 and " + rows + ": " + n);
             }
         }
         
-        private static class PositionSet implements Iterable<PositionSet>
+        @Override
+        public String toString()
+        {
+            for(int row = 1; row < rows; row++)
+            {
+                for(int col = 1; col < cols; col++)
+                {
+                    
+                }
+            }
+            
+            return null;
+        }
+        
+        private static class PositionSet implements Iterable<Position>
         {
             private static final int ROW = 0, COL = 1, BOX = 2;
             
             private int type;
             private int row, col;
+            private final int boxSize;
             
+            /**
+             * Convenience constructor if you are not making a box set.  Calls
+             * this(type, row, col, -1)
+             * @param type The type of set to make
+             * @param row The starting row
+             * @param col The starting column
+             */
             private PositionSet(int type, int row, int col)
             {
+                this(type, row, col, -1);
+                if(type == BOX)
+                {
+                    throw new IllegalArgumentException(
+                            "Box set requires a box size");
+                }
+            }
+            
+            /**
+             * Makes a new position set with the given starting row and column.
+             * The type of set determines how the iterator will advance.  The
+             * box size is only needed if this is a BOX type set.
+             * @param type The type of set
+             * @param row The starting row
+             * @param col The starting column
+             * @param boxSize The size of the boxes for this puzzle
+             */
+            private PositionSet(int type, int row, int col, int boxSize)
+            {
+                this.boxSize = boxSize;
                 this.type = type;
                 this.row = row;
                 this.col = col;
             }
             
             /***** Factory Getters *****/
-            public static PositionSet rowSet(int row)
+            private static PositionSet rowSet(int row)
             {
                 return new PositionSet(ROW, row, 1);
             }
             
-            public static PositionSet colSet(int col)
+            private static PositionSet colSet(int col)
             {
                 return new PositionSet(COL, 1, col);
             }
             
-            public static PositionSet boxSet(int row, int col, int boxSize)
+            private static PositionSet boxSet(int row, int col, int boxSize)
             {
                 int rowStart = ((row - 1) / boxSize) * boxSize + 1;
                 int colStart = ((col - 1) / boxSize) * boxSize + 1;
-                return new PositionSet(BOX, rowStart, colStart);
+                return new PositionSet(BOX, rowStart, colStart, boxSize);
+            }
+            
+            /**
+             * Gets a list of all sets the given position is in.
+             * @param row The row position
+             * @param col The column position
+             * @param boxSize The size of boxes for this puzzle
+             * @return A list of all sets the position is in
+             */
+            public static List<PositionSet> getAllSets(int row, int col, int boxSize)
+            {
+                ArrayList<PositionSet> sets = new ArrayList<>(3);
+                sets.add(rowSet(row));
+                sets.add(colSet(col));
+                sets.add(boxSet(row, col, boxSize));
+                return sets;
             }
             
             @Override
-            public Iterator<PositionSet> iterator()
+            public Iterator<Position> iterator()
             {
-                return new Iterator<PositionSet>() {
+                return new Iterator<Position>() {
 
                     @Override
                     public boolean hasNext()
@@ -310,24 +440,72 @@ public class SudokuSolver
                             case COL:
                                 return col < Puzzle.cols;
                             case BOX:
-                                throw new UnsupportedOperationException("Not supported yet.");
+                                // traverse box like reading
+                                return  (col - 1) % boxSize == 2 &&
+                                        (row - 1) % boxSize == 2;
+                            default:
+                                throw new IllegalArgumentException(
+                                        "Unrecognized type: " + type);
                         }
-                        
-                        return false;
                     }
 
                     @Override
-                    public PositionSet next()
+                    public Position next()
                     {
-                        throw new UnsupportedOperationException("Not supported yet.");
+                        switch(type)
+                        {
+                            case ROW:
+                                return new Position(row++, col);
+                            case COL:
+                                return new Position(row, col++);
+                            case BOX:
+                                // traverse box like reading
+                                Position p = new Position(row, col);
+                                if ((col - 1) % boxSize == 2)
+                                {
+                                    row++;
+                                    col -= boxSize;
+                                }
+                                else
+                                {
+                                    col++;
+                                }
+                                return p;
+                            default:
+                                throw new IllegalArgumentException(
+                                        "Unrecognized type: " + type);
+                        }
                     }
 
                     @Override
                     public void remove()
                     {
-                        // does nothing
+                        throw new UnsupportedOperationException(
+                                "Cannot remove from a position set");
                     }
                 };
+            }
+        }
+        
+        /**
+         * Represents a position in the puzzle.  This class contains two
+         * fields; row, and col.  These fields cannot be changed.  (This is
+         * functionally a tuple, but java doesn't have one booo!)
+         */
+        public static class Position
+        {
+            // These are final fields, so it is safe for the public to
+            // access them
+            public final int row, col;
+            /**
+             * Make a new position with the given row and column.
+             * @param row The row
+             * @param col The column
+             */
+            public Position(int row, int col)
+            {
+                this.row = row;
+                this.col = col;
             }
         }
     }
