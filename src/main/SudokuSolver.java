@@ -125,15 +125,17 @@ public class SudokuSolver
          */
         public boolean solve()
         {
-            while(solveBySink() || solveBySource())
+            System.out.println(this);
+            while(solveBySource() || solveBySink())
             {
                 // wheee!
+                System.out.println(this);
             }
             
             // we can solve no more, check the state
-            for(int row = 1; row < rows; row++)
+            for(int row = 1; row <= rows; row++)
             {
-                for(int col = 1; col < cols; col++)
+                for(int col = 1; col <= cols; col++)
                 {
                     int n = get(row, col);
                     if(n == -1 || !isLegal(row, col, n))
@@ -152,12 +154,13 @@ public class SudokuSolver
          */
         private boolean solveBySink()
         {
+            System.out.println("TUNNEL OF LIGHTS");
             boolean changed = false;
             
             // loop through each box and rule out entries
-            for(int row = 1; row < rows; row++)
+            for(int row = 1; row <= rows; row++)
             {
-                for(int col = 1; col < cols; col++)
+                for(int col = 1; col <= cols; col++)
                 {
                     if(get(row, col) != -1)
                     {
@@ -166,7 +169,7 @@ public class SudokuSolver
                     }
                     
                     Set<Integer> possible = new HashSet<>((int)(rows / .75));
-                    for(int n = 1; n < rows; n++)
+                    for(int n = 1; n <= rows; n++)
                     {
                         if(isLegal(row, col, n))
                         {
@@ -195,12 +198,13 @@ public class SudokuSolver
          */
         private boolean solveBySource()
         {
+            System.out.println("CALM ENERGY");
             boolean changed = false;
             
             // loop through each position
-            for(int col = 1; col < cols; col++)
+            for(int col = 1; col <= cols; col++)
             {
-                position: for(int row = 1; row < rows; row++)
+                position: for(int row = 1; row <= rows; row++)
                 {
                     if(get(row, col) != -1)
                     {
@@ -208,7 +212,7 @@ public class SudokuSolver
                         continue;
                     }
                     // check if each number can go anywhere else
-                    for(int n = 1; n < rows; n++)
+                    for(int n = 1; n <= rows; n++)
                     {
                         if(!isLegal(row, col, n))
                         {
@@ -292,8 +296,10 @@ public class SudokuSolver
          */
         private boolean contains(PositionSet set, int n)
         {
+//            System.out.println(">>> contains");
             for(Position p : set)
             {
+//                System.out.println(">>>> checking " + p);
                 if(get(p) == n)
                 {
                     return true;
@@ -335,18 +341,42 @@ public class SudokuSolver
             }
         }
         
+        
         @Override
         public String toString()
         {
-            for(int row = 1; row < rows; row++)
+            String rowSep = "+-------+-------+-------+\n";
+            String out = rowSep;
+            for(int row = 1; row <= rows; row++)
             {
-                for(int col = 1; col < cols; col++)
+                out += "|";
+                for(int col = 1; col <= cols; col++)
                 {
-                    
+                    int n = get(col, row);
+//                    System.out.println(n);
+                    if(n == -1)
+                    {
+                        out += "  ";
+                    }
+                    else
+                    {
+                        out += " " + n;
+                    }
+                    if((col - 1) % boxSize == boxSize - 1)
+                    {
+//                        System.out.println("putting |");
+                        out += " |";
+                    }
+                }
+                out += "\n";
+                if((row - 1) % boxSize == boxSize - 1)
+                {
+//                    System.out.println("putting row break");
+                    out += rowSep;
                 }
             }
             
-            return null;
+            return out;
         }
         
         private static class PositionSet implements Iterable<Position>
@@ -394,11 +424,13 @@ public class SudokuSolver
             /***** Factory Getters *****/
             private static PositionSet rowSet(int row)
             {
+//                System.out.println("Rowset starting at " + row);
                 return new PositionSet(ROW, row, 1);
             }
             
             private static PositionSet colSet(int col)
             {
+//                System.out.println("Colset starting at " + col);
                 return new PositionSet(COL, 1, col);
             }
             
@@ -406,6 +438,7 @@ public class SudokuSolver
             {
                 int rowStart = ((row - 1) / boxSize) * boxSize + 1;
                 int colStart = ((col - 1) / boxSize) * boxSize + 1;
+//                System.out.println("Boxset starting at " + rowStart + ", " + colStart);
                 return new PositionSet(BOX, rowStart, colStart, boxSize);
             }
             
@@ -436,13 +469,13 @@ public class SudokuSolver
                         switch(type)
                         {
                             case ROW:
-                                return row < Puzzle.rows;
+                                return col <= Puzzle.cols;
                             case COL:
-                                return col < Puzzle.cols;
+                                return row <= Puzzle.rows;
                             case BOX:
-                                // traverse box like reading
-                                return  (col - 1) % boxSize == 2 &&
-                                        (row - 1) % boxSize == 2;
+                                // get next will invalidate the data if it is
+                                // done
+                                return  !(col == -1 || row == -1);
                             default:
                                 throw new IllegalArgumentException(
                                         "Unrecognized type: " + type);
@@ -455,16 +488,25 @@ public class SudokuSolver
                         switch(type)
                         {
                             case ROW:
-                                return new Position(row++, col);
-                            case COL:
                                 return new Position(row, col++);
+                            case COL:
+                                return new Position(row++, col);
                             case BOX:
                                 // traverse box like reading
                                 Position p = new Position(row, col);
-                                if ((col - 1) % boxSize == 2)
+                                if ((col - 1) % boxSize == boxSize - 1)
                                 {
-                                    row++;
-                                    col -= boxSize;
+                                    if((row - 1) % boxSize == boxSize - 1)
+                                    {
+                                        // we are now done, so invalidate the
+                                        // position
+                                        row = col = -1;
+                                    }
+                                    else
+                                    {
+                                        row++;
+                                        col -= (boxSize - 1);
+                                    }
                                 }
                                 else
                                 {
@@ -506,6 +548,12 @@ public class SudokuSolver
             {
                 this.row = row;
                 this.col = col;
+            }
+            
+            @Override
+            public String toString()
+            {
+                return "(" + row + ", " + col + ")";
             }
         }
     }
