@@ -1,9 +1,12 @@
 package main;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Scanner;
 import java.util.Set;
 
 /**
@@ -12,7 +15,7 @@ import java.util.Set;
  */
 public class SudokuSolver
 {
-    private static final int[][] EXAMPLE = 
+/*    private static final int[][] EXAMPLE = 
     {
         {7, -1, -1,   -1, 3, -1,   -1, 6, 1},
         {6, 1, -1,   -1, -1, 2,   -1, 3, -1},
@@ -25,23 +28,77 @@ public class SudokuSolver
         {-1, 8, 9,   -1, 6, -1,   1, -1, -1},
         {-1, 7, -1,   2, -1, 5,   -1, -1, -1},
         {5, -1, -1,   8, -1, -1,   9, 2, -1}
+    };*/
+
+    private static final int[][] EMPTY = 
+    {
+        {-1, -1, -1,   -1, -1, -1,   -1, -1, -1},
+        {-1, -1, -1,   -1, -1, -1,   -1, -1, -1},
+        {-1, -1, -1,   -1, -1, -1,   -1, -1, -1},
+        
+        {-1, -1, -1,   -1, -1, -1,   -1, -1, -1},
+        {-1, -1, -1,   -1, -1, -1,   -1, -1, -1},
+        {-1, -1, -1,   -1, -1, -1,   -1, -1, -1},
+        
+        {-1, -1, -1,   -1, -1, -1,   -1, -1, -1},
+        {-1, -1, -1,   -1, -1, -1,   -1, -1, -1},
+        {-1, -1, -1,   -1, -1, -1,   -1, -1, -1}
     };
+
+    private static final int[][] EXAMPLE = 
+    {
+        {1, 7, -1,   -1, -1, -1,   -1, -1, 2},
+        {-1, 3, -1,   -1, 4, -1,   8, 9, -1},
+        {-1, -1, -1,   -1, -1, -1,   -1, -1, 4},
+        
+        {-1, -1, -1,   -1, -1, 1,   -1, -1, -1},
+        {4, -1, -1,   8, -1, 5,   -1, -1, 1},
+        {-1, -1, -1,   -1, -1, -1,   -1, -1, -1},
+        
+        {6, 1, -1,   -1, -1, -1,   -1, -1, -1},
+        {-1, 8, 3,   -1, 5, -1,   -1, 7, -1},
+        {7, -1, -1,   -1, -1, -1,   -1, 6, 5}
+    };
+    
     /**
      * @param args the command line arguments
      */
-    public static void main(String[] args)
+    public static void main(String[] args) throws FileNotFoundException
     {
-        System.out.println("Hello World!");
+        Scanner scanner = new Scanner(new File("puzzles.txt"));
+        ArrayList<Puzzle> puzzles = new ArrayList(250);
+        while(scanner.hasNext())
+        {
+            String s = scanner.next();
+            int[][] data = new int[Puzzle.cols][Puzzle.rows];
+            for(int i = 0; i < s.length(); i++)
+            {
+                int n = Integer.parseInt(s.charAt(i) + "");
+                n = (n == 0 ? -1 : n);
+                data[i / data.length][i % data.length] = n;
+            }
+            Puzzle p = new Puzzle(data);
+            puzzles.add(p);
+        }
+        
+        System.out.println("Starting");
         Puzzle p = new Puzzle(EXAMPLE);
+        
+//        Puzzle p = puzzles.get(0);
+        System.out.println(p);
         p.solve();
+        System.out.println(p);
+        
     }
     
     public static class Puzzle
     {
         private static final int rows = 9, cols = 9, boxSize = 3;
+        private static final boolean diag = true;
         
         /** The array that stores the state of the puzzle */
         private int[][] data;
+        private boolean solved;
         
         /**
          * Constructs a new puzzle with the given data.  A -1 signifies an
@@ -64,6 +121,7 @@ public class SudokuSolver
             }
             
             this.data = data;
+            solved = false;
         }
         
         /**
@@ -120,16 +178,24 @@ public class SudokuSolver
         }
         
         /**
+         * @return If the puzzle is solved or not
+         */
+        public boolean isSolved()
+        {
+            return solved;
+        }
+        
+        /**
          * Solves the puzzle.
          * @return if the puzzle is solved successfully
          */
         public boolean solve()
         {
-            System.out.println(this);
+//            System.out.println(this);
             while(solveBySource() || solveBySink())
             {
                 // wheee!
-                System.out.println(this);
+//                System.out.println(this);
             }
             
             // we can solve no more, check the state
@@ -145,6 +211,7 @@ public class SudokuSolver
                 }
             }
             // all boxes have valid entries
+            solved = true;
             return true;
         }
         
@@ -154,7 +221,7 @@ public class SudokuSolver
          */
         private boolean solveBySink()
         {
-            System.out.println("TUNNEL OF LIGHTS");
+//            System.out.println("TUNNEL OF LIGHTS");
             boolean changed = false;
             
             // loop through each box and rule out entries
@@ -189,6 +256,7 @@ public class SudokuSolver
                     }
                 }
             }
+            
             return changed;
         }
         
@@ -198,7 +266,7 @@ public class SudokuSolver
          */
         private boolean solveBySource()
         {
-            System.out.println("CALM ENERGY");
+//            System.out.println("CALM ENERGY");
             boolean changed = false;
             
             // loop through each position
@@ -356,7 +424,7 @@ public class SudokuSolver
 //                    System.out.println(n);
                     if(n == -1)
                     {
-                        out += "  ";
+                        out += " .";
                     }
                     else
                     {
@@ -381,7 +449,7 @@ public class SudokuSolver
         
         private static class PositionSet implements Iterable<Position>
         {
-            private static final int ROW = 0, COL = 1, BOX = 2;
+            private static final int ROW = 0, COL = 1, BOX = 2, FDIAG = 3, BDIAG = 4;
             
             private int type;
             private int row, col;
@@ -401,6 +469,11 @@ public class SudokuSolver
                 {
                     throw new IllegalArgumentException(
                             "Box set requires a box size");
+                }
+                else if((type == FDIAG || type == BDIAG) && row != 1)
+                {
+                    throw new IllegalArgumentException(
+                            "Diagonal set requires row to be 1");
                 }
             }
             
@@ -442,6 +515,30 @@ public class SudokuSolver
                 return new PositionSet(BOX, rowStart, colStart, boxSize);
             }
             
+            private static PositionSet fdiagSet(int row, int col)
+            {
+                if(row == col)
+                {
+                    return new PositionSet(FDIAG, 1, 1);
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            
+            private static PositionSet bdiagSet(int row, int col)
+            {
+                if(row == 10 - col)
+                {
+                    return new PositionSet(BDIAG, 1, 9);
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            
             /**
              * Gets a list of all sets the given position is in.
              * @param row The row position
@@ -455,6 +552,21 @@ public class SudokuSolver
                 sets.add(rowSet(row));
                 sets.add(colSet(col));
                 sets.add(boxSet(row, col, boxSize));
+                
+                // add the diagonal sets
+                if(diag)
+                {
+                    PositionSet tmp_diag = fdiagSet(row, col);
+                    if(tmp_diag != null)
+                    {
+                        sets.add(tmp_diag);
+                    }
+                    tmp_diag = bdiagSet(row, col);
+                    if(tmp_diag != null)
+                    {
+                        sets.add(tmp_diag);
+                    }
+                }
                 return sets;
             }
             
@@ -476,6 +588,9 @@ public class SudokuSolver
                                 // get next will invalidate the data if it is
                                 // done
                                 return  !(col == -1 || row == -1);
+                            case FDIAG:
+                            case BDIAG:
+                                return row <= Puzzle.rows;
                             default:
                                 throw new IllegalArgumentException(
                                         "Unrecognized type: " + type);
@@ -513,6 +628,10 @@ public class SudokuSolver
                                     col++;
                                 }
                                 return p;
+                            case FDIAG:
+                                return new Position(row++, col++);
+                            case BDIAG:
+                                return new Position(row++, col--);
                             default:
                                 throw new IllegalArgumentException(
                                         "Unrecognized type: " + type);
