@@ -29,47 +29,33 @@ public class SudokuSolver
         {-1, -1, -1,   -1, -1, -1,   -1, -1, -1},
         {-1, -1, -1,   -1, -1, -1,   -1, -1, -1}
     };
-
-    private static final int[][] EXAMPLE = 
-    {
-        {-1, 5, -1,   6, -1, -1,   -1, -1, -1},
-        {7, 8, -1,   3, -1, 4,   -1, -1, 2},
-        {-1, -1, -1,   5, -1, -1,   -1, 1, 3},
-        
-        {5, -1, -1,   -1, -1, -1,   -1, -1, 8},
-        {-1, -1, -1,   -1, -1, -1,   -1, -1, -1},
-        {1, -1, -1,   -1, -1, -1,   -1, -1, 7},
-        
-        {2, -1, -1,   -1, -1, 9,   -1, -1, -1},
-        {9, -1, -1,   2, -1, 8,   -1, 6, 1},
-        {-1, -1, -1,   -1, -1, 6,   9, -1, -1}
-    };
     
     /**
      * @param args the command line arguments
+     * @throws java.io.FileNotFoundException
      */
     public static void main(String[] args) throws FileNotFoundException
     {
         setBestLAF();
         
-        Scanner scanner = new Scanner(new File("puzzles.txt"));
-        ArrayList<Puzzle> puzzles = new ArrayList(250);
-        while(scanner.hasNext())
-        {
-            String s = scanner.next();
-            int[][] data = new int[Puzzle.cols][Puzzle.rows];
-            for(int i = 0; i < s.length(); i++)
-            {
-                int n = Integer.parseInt(s.charAt(i) + "");
-                n = (n == 0 ? -1 : n);
-                data[i / data.length][i % data.length] = n;
-            }
-            Puzzle p = new Puzzle(data);
-            puzzles.add(p);
-        }
-        
-        System.out.println("Starting");
-        Puzzle p = new Puzzle(EXAMPLE);
+//        Scanner scanner = new Scanner(new File("puzzles.txt"));
+//        ArrayList<Puzzle> puzzles = new ArrayList(250);
+//        while(scanner.hasNext())
+//        {
+//            String s = scanner.next();
+//            int[][] data = new int[Puzzle.cols][Puzzle.rows];
+//            for(int i = 0; i < s.length(); i++)
+//            {
+//                int n = Integer.parseInt(s.charAt(i) + "");
+//                n = (n == 0 ? -1 : n);
+//                data[i / data.length][i % data.length] = n;
+//            }
+//            Puzzle p = new Puzzle(data);
+//            puzzles.add(p);
+//        }
+//        
+//        System.out.println("Starting");
+//        Puzzle p = new Puzzle(EXAMPLE);
         
 //        System.out.println("Timing ...");
 //        System.out.println(time(p) + " seconds");
@@ -81,7 +67,7 @@ public class SudokuSolver
 //        p.solve();
 //        System.out.println(p);
         
-        SudokuFrame frame = new SudokuFrame(new Puzzle(EXAMPLE));
+        SudokuFrame frame = new SudokuFrame(new Puzzle(EMPTY));
         frame.setVisible(true);
     }
     
