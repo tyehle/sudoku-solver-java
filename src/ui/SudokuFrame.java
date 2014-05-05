@@ -10,7 +10,10 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.ArrayList;
 import javax.swing.JButton;
+import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
 import javax.swing.JPanel;
 import javax.swing.JToggleButton;
 import main.Position;
@@ -58,6 +61,22 @@ public class SudokuFrame extends JFrame
                 boardPanel.add(thisBox);
             }
         }
+        
+        JCheckBoxMenuItem useDiagonals = new JCheckBoxMenuItem("Use diagonals");
+        useDiagonals.addActionListener(new ActionListener()
+        {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                Puzzle.diag = ((JCheckBoxMenuItem)e.getSource()).isSelected();
+            }
+        });
+        JMenuBar menuBar = new JMenuBar();
+        JMenu optionsMenu = new JMenu("Options");
+        optionsMenu.add(useDiagonals);
+        menuBar.add(optionsMenu);
+        setJMenuBar(menuBar);
+        
 
         BorderLayout layout = new BorderLayout();
         setLayout(layout);

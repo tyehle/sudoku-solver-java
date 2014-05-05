@@ -10,7 +10,8 @@ import java.util.Set;
 public class Puzzle
 {
     public static final int rows = 9, cols = 9, boxSize = 3;
-    public static final boolean diag = true;
+    
+    public static boolean diag = false;
     /**
      * The array that stores the state of the puzzle
      */
